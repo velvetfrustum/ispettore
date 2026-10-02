@@ -1,5 +1,25 @@
 # Source layout
 
+## Architecture
+
+Ispettore uses a **live capture, stored-data inspection** model for both WebGL and WebGPU: it
+records one armed frame of real GPU activity, bakes the color output of each significant event
+while the page actually renders it, and stores that frame as one self-contained package.
+Browsing an event afterward — selecting it in the event list, stepping through pipeline
+stages, scrubbing commands — is a pure lookup against that stored package.
+
+Selecting an event **never** executes a captured GPU command, reconstructs a GPU resource,
+requests a device/context, or calls back into your application. If something wasn't captured,
+the panel says so explicitly instead of guessing or re-running your code to generate it.
+
+This is a deliberate trade-off against the alternative (replaying recorded commands in an
+isolated context to reconstruct arbitrary state): that approach scales badly with long-running
+scenes and can diverge from what actually happened on screen. Capturing observable output
+live, once, trades the ability to synthesize data that was never recorded for guaranteed
+correctness and bounded capture cost.
+
+## Layout
+
 ```
 src/
   backend/
@@ -39,8 +59,7 @@ src/
 ```
 
 WebGL code lives under `backend/webgl/` and `inspection/webgl/`. API-neutral layers use neutral
-names and never import WebGL enums or browser WebGL object types. See
-**[../docs/PLAN.md](../docs/PLAN.md)** for goals, differentiation, and phased roadmap.
+names and never import WebGL enums or browser WebGL object types.
 
 Both `inspection/` hosts inspect stored data only. Neither creates a GPU context/device or
 executes recorded commands. Missing previews have explicit diagnostics, including older
