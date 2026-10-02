@@ -1,0 +1,21 @@
+{
+  "name": "ispettore",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "dev": "node tools/build.mjs --watch",
+    "serve:demos": "node tools/serve-demos.mjs",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:e2e": "npm run build && node --test tests/e2e/*.test.js",
+    "test:integration": "npm run build && playwright test",
+    "test:integration:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "esbuild": "^0.28.2",
+    "three": "0.184.0"
+  }
+}

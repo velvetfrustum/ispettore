@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Ispettore",
+  "version": "0.1.0",
+  "description": "Minimal Three.js + WebGL debugger (draw calls, scene tree, resources).",
+  "permissions": ["activeTab", "downloads", "scripting", "sidePanel", "storage"],
+  "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "devtools_page": "devtools.html",
+  "action": {
+    "default_title": "Open Ispettore"
+  },
+  "side_panel": {
+    "default_path": "ui/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["injected.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inspection/webgl/host.html"],
+      "matches": ["http://*/*", "https://*/*", "file:///*"]
+    },
+    {
+      "resources": ["inspection/webgpu/host.html"],
+      "matches": ["http://*/*", "https://*/*", "file:///*"]
+    }
+  ],
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

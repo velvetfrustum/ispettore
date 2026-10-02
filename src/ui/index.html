@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ispettore</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header class="panel-top">
+      <nav class="mode-nav" role="tablist" aria-label="Panel mode">
+        <button type="button" role="tab" id="mode-overview" data-view="overview" aria-selected="true" aria-controls="view-overview">
+          Overview
+        </button>
+        <button type="button" role="tab" id="mode-frame" data-view="frame" aria-selected="false" aria-controls="view-frame">
+          Frame <span id="frame-count" class="badge"></span>
+        </button>
+        <button type="button" role="tab" id="mode-captures" data-view="captures" aria-selected="false" aria-controls="view-captures">
+          Captures
+        </button>
+      </nav>
+
+      <p class="panel-top-meta" id="meta"></p>
+
+      <div class="panel-top-actions">
+        <button id="ping" type="button" class="panel-action" data-tooltip="Re-read the scene tree, renderers, textures, programs, and models from the page">Refresh overview</button>
+      </div>
+      <div id="frame-actions" class="panel-top-actions frame-actions" hidden>
+        <button id="frame-selection-clear" type="button" class="panel-action" hidden data-tooltip="Clear the selected event and its preview">Clear selection</button>
+        <select id="frame-context" class="panel-select" aria-label="Graphics context"></select>
+        <button id="frame-store" type="button" class="panel-action" disabled data-tooltip="Capture frame waits for the next complete animation frame and stores it — no page reload. Stored captures are inspected in the extension, never the live page.">Capture frame</button>
+        <button id="frame-refresh" type="button" class="panel-action" data-tooltip="Re-scan the inspected page for WebGL and WebGPU contexts that can be captured">Refresh GPU contexts</button>
+      </div>
+      <div class="status-row">
+        <span id="status" class="status">Ready</span>
+        <span id="frame-strip-title" class="frame-strip-title"></span>
+      </div>
+    </header>
+
+    <main class="views">
+      <section id="view-overview" class="view view--active" role="tabpanel" aria-labelledby="mode-overview">
+        <p id="overview-scene-notice" class="overview-notice" hidden></p>
+        <div id="inspector-root" class="inspector panel-surface"></div>
+
+        <details class="resources-section panel-surface" id="resources-section">
+          <summary class="resources-summary">
+            Resources
+            <span class="muted" id="resources-summary"></span>
+          </summary>
+          <nav class="resource-tabs" role="tablist" aria-label="Resource type">
+            <button type="button" role="tab" data-resource="textures" aria-selected="true" aria-controls="resource-textures">
+              Textures <span id="texture-count" class="badge"></span>
+            </button>
+            <button type="button" role="tab" data-resource="programs" aria-selected="false" aria-controls="resource-programs">
+              Programs <span id="program-count" class="badge"></span>
+            </button>
+            <button type="button" role="tab" data-resource="models" aria-selected="false" aria-controls="resource-models">
+              Models <span id="model-count" class="badge"></span>
+            </button>
+          </nav>
+          <div id="resource-textures" class="resource-panel" role="tabpanel">
+            <div id="texture-grid" class="texture-grid"></div>
+          </div>
+          <div id="resource-programs" class="resource-panel" role="tabpanel" hidden>
+            <ul id="program-list" class="list compact"></ul>
+          </div>
+          <div id="resource-models" class="resource-panel" role="tabpanel" hidden>
+            <ul id="model-list" class="list compact"></ul>
+          </div>
+        </details>
+
+        <p id="overview-gl-hint" class="gl-hint muted"></p>
+      </section>
+
+      <section id="view-frame" class="view" role="tabpanel" aria-labelledby="mode-frame" hidden>
+        <div id="frame-top-stack" class="frame-top-stack">
+          <div id="frame-strip" class="frame-strip panel-surface" hidden>
+            <div class="frame-strip-body"></div>
+          </div>
+        </div>
+
+        <div class="pane-handle pane-handle--h" id="frame-split-h" data-tooltip="Drag to resize the top panels — double-click to reset"></div>
+
+        <div class="capture-split panel-surface" id="frame-split">
+          <div class="event-browser">
+            <div class="event-browser-head">
+              <div class="event-browser-title-row">
+                <h3 class="capture-pane-title event-browser-title">Browser events</h3>
+                <span id="scene-filter-chip" class="scene-filter-chip"></span>
+              </div>
+              <input
+                type="search"
+                id="frame-search"
+                class="event-browser-search"
+                placeholder="Search EID, op, object…"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <select id="frame-sort" class="event-browser-sort" aria-label="Sort browser events">
+                <option value="eid">EID order</option>
+              </select>
+            </div>
+            <div class="event-browser-scroll">
+              <ol id="frame-event-list" class="list event-browser-list"></ol>
+            </div>
+          </div>
+          <div class="pane-handle pane-handle--v" id="frame-split-v" data-tooltip="Drag to resize — double-click to reset"></div>
+          <div class="inspection-pane">
+            <div class="inspection-header">
+              <h3 class="capture-pane-title">Inspection</h3>
+              <span id="frame-event-label" class="inspection-event-label muted"></span>
+            </div>
+            <nav class="inspection-tabs" role="tablist" aria-label="Frame inspection views">
+              <button type="button" role="tab" data-inspect="color" aria-selected="true">Color</button>
+              <button type="button" role="tab" data-inspect="pipeline" aria-selected="false">Pipeline</button>
+              <button type="button" role="tab" data-inspect="details" aria-selected="false">Call Info</button>
+            </nav>
+            <div id="frame-inspection" class="inspection-view" role="tabpanel">
+              <div id="frame-viewport" class="inspection-viewport">
+                <p class="preview-placeholder">Select an event to inspect it in the isolated host.</p>
+              </div>
+            </div>
+            <div id="frame-details" class="draw-details" hidden></div>
+            <div id="frame-commands" class="frame-commands" hidden>
+              <h4 class="capture-pane-title">Commands in range</h4>
+              <ul id="frame-command-list" class="list compact"></ul>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="view-captures" class="view" role="tabpanel" aria-labelledby="mode-captures" hidden>
+        <details id="capture-metadata-details" class="capture-fold capture-metadata-fold panel-surface">
+          <summary>Capture details</summary>
+          <div id="capture-metadata" class="capture-metadata" hidden></div>
+        </details>
+
+        <details id="stored-captures-fold" class="capture-fold stored-captures-fold panel-surface">
+          <summary>Stored captures <span id="stored-captures-note" class="stored-captures-note muted"></span></summary>
+          <div class="stored-captures-body">
+            <ul id="stored-captures-list" class="list compact stored-list"></ul>
+            <div id="capture-diff-bar" class="capture-diff-bar" hidden>
+              <label class="capture-label" for="diff-capture-a">Diff captures</label>
+              <select id="diff-capture-a" class="panel-select" aria-label="Diff capture A"></select>
+              <span class="muted">vs</span>
+              <select id="diff-capture-b" class="panel-select" aria-label="Diff capture B"></select>
+              <button id="diff-run" type="button" class="panel-action" disabled>Diff</button>
+              <button id="diff-clear" type="button" class="panel-action" hidden>Clear diff</button>
+            </div>
+            <button id="stored-import" type="button" class="panel-action stored-import-button">Import capture…</button>
+            <button id="stored-delete-all" type="button" class="panel-action stored-delete-all" hidden data-tooltip="Delete every stored capture — click twice to confirm">Delete all captures</button>
+            <input id="stored-import-file" type="file" accept="application/json,.json" hidden />
+          </div>
+        </details>
+
+        <div id="capture-diff" class="capture-diff panel-surface" hidden></div>
+      </section>
+
+    </main>
+
+    <script type="module" src="panel.js"></script>
+  </body>
+</html>
