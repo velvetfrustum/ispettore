@@ -8,6 +8,23 @@ apps) which object, material, and pass each draw belongs to.
 Think of it as Spector.js's live GPU capture combined with a RenderDoc-style pipeline
 inspector, with Three.js scene awareness built in.
 
+## Install
+
+Ispettore isn't on the Chrome Web Store yet — install it from a release zip:
+
+1. Download `ispettore-v<version>.zip` from the [Releases page](../../releases/latest).
+2. Unzip it.
+3. Open Chrome → `chrome://extensions`, enable **Developer mode**.
+4. Click **Load unpacked** and select the unzipped folder.
+
+Ispettore needs to see `http`, `https`, and `file` pages to observe their GPU contexts, so
+Chrome will ask for access to all sites. Nothing is sent off your machine: captures are stored
+locally in the extension's own IndexedDB.
+
+Open any WebGL/WebGPU page, press **F12**, choose the **Ispettore** tab, open the **Frame**
+sub-tab, and click **Capture frame**. (The side panel via the toolbar icon also works; DevTools
+is recommended.)
+
 ## Features
 
 ![Baked color output of a captured WebGL draw event, showing a detailed metallic chain mesh](screenshots/visual-output.png)
