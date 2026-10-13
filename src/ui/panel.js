@@ -16,6 +16,7 @@ let activeTabId = null;
 let currentView = 'overview';
 let selectedResource = 'textures';
 let captureContexts = [];
+let activeSceneFilter = null;
 
 let inspectionHostPromises = new Map();
 let hostRequestSerial = 0;
@@ -277,7 +278,7 @@ function renderTreeNode(node) {
   const summary = node.summary ? `<span class="summary">${escapeHtml(node.summary)}</span>` : '';
   const filter =
     node.uuid != null
-      ? `<button type="button" class="scene-filter" data-scene-filter-uuid="${escapeHtml(node.uuid)}" data-scene-filter-name="${escapeHtml(node.name)}" title="Filter browser events for this node">⊘</button>`
+      ? `<button type="button" class="scene-filter" data-scene-filter-uuid="${escapeHtml(node.uuid)}" data-scene-filter-name="${escapeHtml(node.name)}"></button>`
       : '';
   const kids = (node.children || []).map((c) => `<li>${renderTreeNode(c)}</li>`).join('');
   const childBlock = kids ? `<ul>${kids}</ul>` : '';
@@ -431,9 +432,37 @@ function renderInspector(data) {
   root.querySelectorAll('[data-scene-filter-uuid]').forEach((button) => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      captureView.setSceneFilter(button.dataset.sceneFilterUuid, button.dataset.sceneFilterName);
-      setStatus(`Filtering browser events for ${button.dataset.sceneFilterName}`);
+      const { sceneFilterUuid: uuid, sceneFilterName: name } = button.dataset;
+      if (activeSceneFilter?.uuid === uuid) {
+        captureView.setSceneFilter(null);
+        setStatus('Scene filter cleared');
+        return;
+      }
+      const subtree = button.closest('li') ?? button;
+      const uuids = Array.from(subtree.querySelectorAll('[data-scene-filter-uuid]'), (el) => el.dataset.sceneFilterUuid);
+      captureView.setSceneFilter({ uuid, name, uuids });
+      setStatus(`Filtering browser events for ${name}`);
     });
+  });
+  markSceneFilter();
+}
+
+function markSceneFilter() {
+  const root = $('inspector-root');
+  if (!root) return;
+  root.querySelectorAll('[data-scene-filter-uuid]').forEach((button) => {
+    const uuid = button.dataset.sceneFilterUuid;
+    const isRoot = activeSceneFilter?.uuid === uuid;
+    const covered = !isRoot && Boolean(activeSceneFilter?.uuids.has(uuid));
+    button.textContent = isRoot || covered ? '▼' : '▽';
+    button.title = isRoot
+      ? 'Filtering browser events for this node — click to clear'
+      : covered
+        ? `Included in the filter on ${activeSceneFilter.name || activeSceneFilter.uuid} — click to filter this node only`
+        : 'Filter browser events for this node and its descendants';
+    button.classList.toggle('scene-filter--active', isRoot);
+    button.classList.toggle('scene-filter--covered', covered);
+    button.closest('.tree-row')?.classList.toggle('tree-row--filtered', isRoot || covered);
   });
 }
 
@@ -830,7 +859,11 @@ const captureView = initCaptureView({
   sendPanelCommand,
   setStatus,
   formatError: formatPanelError,
-  openShaderProgram: openShaderSource
+  openShaderProgram: openShaderSource,
+  onSceneFilterChange: (filter) => {
+    activeSceneFilter = filter;
+    markSceneFilter();
+  }
 });
 
 initCaptureSplitters();

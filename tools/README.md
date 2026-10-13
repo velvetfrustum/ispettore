@@ -21,6 +21,16 @@ npm run package
 
 Attach the resulting zip to a GitHub Release. `release/` is gitignored.
 
+Tag the release to match the version in `manifest.json` (run this from `ispettore-public-repo`,
+not this private repo):
+
+```bash
+git tag -a v<version> -m "v<version>"
+git push origin v<version>
+```
+
+Then on GitHub, draft a release from that tag and attach the zip.
+
 Serves `demos/` at `http://127.0.0.1:8765` and the pinned local Three.js package at `/vendor/three/`. Playwright starts it automatically for integration tests:
 
 ```bash

@@ -97,7 +97,7 @@ const CONTEXT_POLL_INTERVAL_MS = 500;
 const ON_DEMAND_HINT_DELAY_MS = 4000;
 
 export function initCaptureView(panel) {
-  const { hostRequest, sendPanelCommand, setStatus, formatError, openShaderProgram } = panel;
+  const { hostRequest, sendPanelCommand, setStatus, formatError, openShaderProgram, onSceneFilterChange } = panel;
   const $ = (id) => document.getElementById(id);
 
   let contexts = [];
@@ -120,8 +120,7 @@ export function initCaptureView(panel) {
   let inspectionBuffer = 'color';
   let search = '';
   let sort = 'eid';
-  let sceneFilterUuid = null;
-  let sceneFilterName = null;
+  let sceneFilter = null;
   let inspectionSerial = 0;
 
   const contextSelect = $('frame-context');
@@ -846,18 +845,11 @@ export function initCaptureView(panel) {
     rangeList.innerHTML = '';
     let events = currentView.events ?? [];
 
-    if (sceneFilterUuid || sceneFilterName) {
+    if (sceneFilter) {
       events = events.filter((event) => {
-        const cmd = currentView.commands?.[event.commandIndex];
-        const obj = cmd?.semantic?.object;
+        const obj = currentView.commands?.[event.commandIndex]?.semantic?.object;
         if (!obj) return false;
-        if (sceneFilterUuid && (obj.uuid === sceneFilterUuid || currentEventIndex?.byObjectUuid.get(sceneFilterUuid)?.has(event.eid))) {
-          return true;
-        }
-        if (sceneFilterName && obj.name === sceneFilterName) {
-          return true;
-        }
-        return false;
+        return sceneFilter.uuids.has(obj.uuid) || (sceneFilter.name != null && obj.name === sceneFilter.name);
       });
     }
     const query = search.trim().toLowerCase();
@@ -875,7 +867,7 @@ export function initCaptureView(panel) {
       const objectLabel = command?.semantic?.object?.name;
       li.innerHTML = `<span class="range-kind ${kindClass(event.kind)}">${escapeHtml(event.kind)}</span><span class="draw-item">EID ${event.eid} · ${escapeHtml(objectLabel || event.label)}</span><span class="range-meta">CMD ${event.commandIndex} · ${escapeHtml(event.op)}</span>`;
       li.classList.add('range-item');
-      if (sceneFilterUuid) li.classList.add('scene-match');
+      if (sceneFilter) li.classList.add('scene-match');
       if (selectedEid === event.eid) li.classList.add('selected');
       li.addEventListener('click', () => void selectEvent(event.eid));
       rangeList.appendChild(li);
@@ -1151,19 +1143,23 @@ export function initCaptureView(panel) {
     }
   }
 
-  function setSceneFilter(uuid, name) {
-    sceneFilterUuid = uuid ?? null;
-    sceneFilterName = name ?? null;
+  function setSceneFilter(filter) {
+    sceneFilter = filter?.uuid
+      ? { uuid: filter.uuid, name: filter.name || null, uuids: new Set([filter.uuid, ...(filter.uuids ?? [])]) }
+      : null;
     if (sceneFilterChip) {
-      sceneFilterChip.hidden = !sceneFilterUuid;
-      if (sceneFilterUuid) {
-        sceneFilterChip.innerHTML = `Filtering draws for <strong>${escapeHtml(sceneFilterName || uuid)}</strong> <button id="scene-filter-clear" type="button" class="panel-action" data-tooltip="Clear scene filter">✕</button>`;
-        sceneFilterChip.querySelector('#scene-filter-clear').addEventListener('click', () => setSceneFilter(null, null));
+      sceneFilterChip.hidden = !sceneFilter;
+      if (sceneFilter) {
+        const label = escapeHtml(sceneFilter.name || sceneFilter.uuid);
+        const scope = sceneFilter.uuids.size > 1 ? ` <span class="muted">+ ${sceneFilter.uuids.size - 1} descendant(s)</span>` : '';
+        sceneFilterChip.innerHTML = `Filtering draws for <strong>${label}</strong>${scope} <button id="scene-filter-clear" type="button" class="panel-action" data-tooltip="Clear scene filter">✕</button>`;
+        sceneFilterChip.querySelector('#scene-filter-clear').addEventListener('click', () => setSceneFilter(null));
       } else {
         sceneFilterChip.innerHTML = '';
       }
     }
     renderRangeList();
+    onSceneFilterChange?.(sceneFilter);
   }
 
   function diffCaptureLabel(captureId) {

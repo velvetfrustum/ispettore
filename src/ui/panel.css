@@ -1413,6 +1413,25 @@ button.secondary {
   border-color: var(--accent);
 }
 
+.scene-filter--covered {
+  color: var(--draw);
+  border-color: var(--draw);
+}
+
+.scene-filter--active {
+  color: var(--bg);
+  background: var(--draw);
+  border-color: var(--draw);
+}
+
+.scene-filter--active:hover {
+  color: var(--bg);
+}
+
+.tree-row--filtered > strong {
+  color: var(--draw);
+}
+
 .preview-color-img {
   max-width: 100%;
   max-height: var(--capture-preview-max-h);

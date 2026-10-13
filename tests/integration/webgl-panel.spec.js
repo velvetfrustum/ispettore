@@ -126,6 +126,25 @@ test('capture panel stores, describes, inspects, filters, and diffs captures', a
   await panelPage.locator('#scene-filter-chip button').click();
   await expect(panelPage.locator('#scene-filter-chip')).toBeHidden();
 
+  await panelPage.locator('#mode-overview').click();
+  const groupRow = panelPage.locator('#inspector-root .tree-row', { hasText: 'CityGroup' }).first();
+  const groupFilter = groupRow.locator('> .scene-filter');
+  await expect(groupFilter).toHaveText('▽');
+  await groupFilter.click();
+  await expect(groupFilter).toHaveClass(/scene-filter--active/);
+  await expect(groupFilter).toHaveText('▼');
+  const covered = panelPage.locator('#inspector-root .scene-filter--covered');
+  expect(await covered.count()).toBeGreaterThan(0);
+  await expect(covered.first()).toHaveText('▼');
+  await panelPage.locator('#mode-frame').click();
+  await expect(panelPage.locator('#scene-filter-chip')).toContainText('CityGroup');
+  await expect.poll(() => panelPage.locator('#frame-event-list .range-item.scene-match').count()).toBeGreaterThan(0);
+  await panelPage.locator('#scene-filter-chip button').click();
+  await panelPage.locator('#mode-overview').click();
+  await expect(groupFilter).toHaveText('▽');
+  await expect(panelPage.locator('#inspector-root .tree-row--filtered')).toHaveCount(0);
+  await panelPage.locator('#mode-frame').click();
+
   await captureFrame(panelPage, extensionWorker, demoPage);
   await panelPage.locator('#mode-captures').click();
   await expect(panelPage.locator('#capture-diff-bar')).toBeVisible();
